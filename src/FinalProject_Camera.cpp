@@ -1,4 +1,3 @@
-
 /* INCLUDES FOR THIS PROJECT */
 #include <iostream>
 #include <fstream>
@@ -36,7 +35,7 @@ int main(int argc, const char *argv[])
     string imgFileType = ".png";
     int imgStartIndex = 0; // first file index to load (assumes Lidar and camera names have identical naming convention)
     int imgEndIndex = 18;   // last file index to load
-    int imgStepWidth = 1; 
+    int imgStepWidth = 1; // Decrease frame rate (1->frame rate is 10 frame/second)
     int imgFillWidth = 4;  // no. of digits which make up the file index (e.g. img-0001.png)
 
     // object detection
@@ -69,12 +68,13 @@ int main(int argc, const char *argv[])
     P_rect_00.at<double>(2,0) = 0.000000e+00; P_rect_00.at<double>(2,1) = 0.000000e+00; P_rect_00.at<double>(2,2) = 1.000000e+00; P_rect_00.at<double>(2,3) = 0.000000e+00;    
 
     // misc
-    double sensorFrameRate = 10.0 / imgStepWidth; // frames per second for Lidar and camera
+    double sensorFrameRate = 10.0 / imgStepWidth; // frames per second for Lidar and camera (The lower the step width the higher the frame rate)
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
     vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
     bool bVis = false;            // visualize results
 
     /* MAIN LOOP OVER ALL IMAGES */
+    // imgEndIndex = 18 and imgStartIndex = 0
 
     for (size_t imgIndex = 0; imgIndex <= imgEndIndex - imgStartIndex; imgIndex+=imgStepWidth)
     {
@@ -91,6 +91,11 @@ int main(int argc, const char *argv[])
         // push image into data frame buffer
         DataFrame frame;
         frame.cameraImg = img;
+        // dataBuffer.push_back(frame);
+
+        // Refactored implementation of RING BUFFER
+        if (dataBuffer.size() == dataBufferSize) dataBuffer.erase(dataBuffer.begin());
+
         dataBuffer.push_back(frame);
 
         cout << "#1 : LOAD IMAGE INTO BUFFER done" << endl;
@@ -140,29 +145,36 @@ int main(int argc, const char *argv[])
         
         
         // REMOVE THIS LINE BEFORE PROCEEDING WITH THE FINAL PROJECT
-        continue; // skips directly to the next image without processing what comes beneath
+        // continue; // skips directly to the next image without processing what comes beneath
 
         /* DETECT IMAGE KEYPOINTS */
 
         // convert current image to grayscale
+
         cv::Mat imgGray;
         cv::cvtColor((dataBuffer.end()-1)->cameraImg, imgGray, cv::COLOR_BGR2GRAY);
 
-        // extract 2D keypoints from current image
-        vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "SHITOMASI";
+        // extract 2D keypoints from current image (MIDTERM)
 
-        if (detectorType.compare("SHITOMASI") == 0)
-        {
-            detKeypointsShiTomasi(keypoints, imgGray, false);
-        }
-        else
-        {
-            //...
-        }
+        vector<cv::KeyPoint> keypoints; // create empty feature list for current image
+        string detectorType = "FAST";
+
+        if (detectorType == "SHITOMASI") detKeypointsShiTomasi(keypoints, imgGray, false);
+        
+        if (detectorType == "HARRIS") detKeypointsHarris(keypoints, imgGray, false);
+        
+        if (detectorType == "FAST") detKeypointsModern(keypoints, imgGray, detectorType, false); 
+        
+        if (detectorType == "BRISK") detKeypointsModern(keypoints, imgGray, detectorType, false);
+        
+        if (detectorType == "ORB") detKeypointsModern(keypoints, imgGray, detectorType, false); 
+        
+        if (detectorType == "AKAZE") detKeypointsModern(keypoints, imgGray, detectorType, false);
+        
+        if (detectorType == "SIFT" ) detKeypointsModern(keypoints, imgGray, detectorType, false);
 
         // optional : limit number of keypoints (helpful for debugging and learning)
-        bool bLimitKpts = false;
+        bool bLimitKpts = true;
         if (bLimitKpts)
         {
             int maxKeypoints = 50;
@@ -184,7 +196,7 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        string descriptorType = "BRISK"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
+        string descriptorType = "BRIEF"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
 
         // push descriptors for current frame to end of data buffer
@@ -218,6 +230,9 @@ int main(int argc, const char *argv[])
             //// STUDENT ASSIGNMENT
             //// TASK FP.1 -> match list of 3D objects (vector<BoundingBox>) between current and previous frame (implement ->matchBoundingBoxes)
             map<int, int> bbBestMatches;
+
+            // Takes in the previous data buffer, the current data buffer and outputs a map that contains the index numbers of 2 bounding boxes that have been found to correspond together
+            // in 2 time steps
             matchBoundingBoxes(matches, bbBestMatches, *(dataBuffer.end()-2), *(dataBuffer.end()-1)); // associate bounding boxes between current and previous frame using keypoint matches
             //// EOF STUDENT ASSIGNMENT
 
