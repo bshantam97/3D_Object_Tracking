@@ -152,7 +152,32 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
 {
-    // ...
+    // Time between 2 consecutive measurements
+    
+    double dt = frameRate / 100;
+
+    std::vector<double> prevXcoord;
+    std::vector<double> currXcoord;
+
+    for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); it++) {
+        prevXcoord.push_back(it->x);
+    }
+
+    for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); it++) {
+        currXcoord.push_back(it->x);
+    }
+
+    std::sort(prevXcoord.begin(), prevXcoord.end());
+    std::sort(currXcoord.begin(), currXcoord.end());
+
+    double MedianPrev = 0;
+    double MedianCurr = 0;
+
+    // Compute the median for both the lidar point vectors and use that in the TTC Computation
+    MedianPrev = (prevXcoord.size() % 2 == 0) ? prevXcoord[prevXcoord.size() / 2] : prevXcoord[std::floor(prevXcoord.size() / 2)];
+    MedianCurr = (currXcoord.size() % 2 == 0) ? currXcoord[currXcoord.size() / 2] : currXcoord[std::floor(currXcoord.size() / 2)];
+
+    TTC = MedianCurr * dt / (MedianPrev - MedianCurr);
 }
 
 // match list of 3D objects between current and previous frame
@@ -184,16 +209,15 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
     // Have defined a MatchedKeypointCoordinate structure to hold the data
     
     std::vector<MatchedKeypointCoordinate> matchedKeypoints;
-    int index = 0;
     
     for (auto it = matches.begin(); it != matches.end(); it++) {
-        matchedKeypoints[index].prevX = prevFrame.keypoints[it->queryIdx].pt.x;
-        matchedKeypoints[index].prevY = prevFrame.keypoints[it->queryIdx].pt.y;
-        matchedKeypoints[index].currX = currFrame.keypoints[it->trainIdx].pt.x;
-        matchedKeypoints[index].currY = currFrame.keypoints[it->trainIdx].pt.y;
-        ++index;
+        matchedKeypoints.push_back({prevFrame.keypoints[it->queryIdx].pt.x,
+                                    prevFrame.keypoints[it->queryIdx].pt.y,
+                                    currFrame.keypoints[it->trainIdx].pt.x,
+                                    currFrame.keypoints[it->trainIdx].pt.y});
     }
-    // The idea here is to create 2 maps to store boxIds and the number of keypoints inside it
+
+    // The idea here is to create 2 maps to store boxIds and the number of keypoints inside each bounding box
     // After we input the information we can iterate and compute the difference between number of keypoints and the one with 
     // the minimum difference will be input into the map
     // At most the time complexity should be O(numBoundingBox*maxKeypoints)
@@ -227,8 +251,8 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
     for (auto it1 = prevFrameKeypoints.begin(); it1 != prevFrameKeypoints.end(); it1++) {
         // Set it to a very large value
         // currDiff will be used to update the current difference value and diff will be used to store the smallest difference value
-        int diff = 1e-8; 
-        int currDiff = 1e-8;
+        int diff = 1e8; 
+        int currDiff = 1e8;
         for (auto it2 = currFrameKeypoint.begin(); it2 != currFrameKeypoint.end(); it2++) {
             if (currDiff < diff) {
                 diff = currDiff;
