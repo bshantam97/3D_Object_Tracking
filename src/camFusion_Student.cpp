@@ -21,10 +21,8 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
     for (auto it1 = lidarPoints.begin(); it1 != lidarPoints.end(); ++it1)
     {
         // assemble vector for matrix-vector-multiplication
-        X.at<double>(0, 0) = it1->x;
-        X.at<double>(1, 0) = it1->y;
-        X.at<double>(2, 0) = it1->z;
-        X.at<double>(3, 0) = 1;
+        // Convert to homogenous coordinates
+        X = (cv::Mat_<double>(4,1) << it1->x, it1->y, it1->z, 1);
 
         // project Lidar point into camera
         Y = P_rect_xx * R_rect_xx * RT * X;
@@ -33,6 +31,7 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
         pt.x = Y.at<double>(0, 0) / Y.at<double>(2, 0); 
         pt.y = Y.at<double>(1, 0) / Y.at<double>(2, 0); 
 
+        // Idea is to see whether a point is being held by 1 or multiple boxes
         vector<vector<BoundingBox>::iterator> enclosingBoxes; // pointers to all bounding boxes which enclose the current Lidar point
         for (vector<BoundingBox>::iterator it2 = boundingBoxes.begin(); it2 != boundingBoxes.end(); ++it2)
         {
@@ -156,8 +155,90 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
     // ...
 }
 
+// match list of 3D objects between current and previous frame
+// Use the keypoint matches between the current and the previous frame (Make outer loop of those)
+// Then figure out which of the keypoints are contained within the bounding boxes in the previous and the current frame
+// Store the boxIds lets say in a multimap
+// Matches mus be the ones with the highest number of keypoint correspondences
+// We need to output a map with matching boxId's between previous frame and current frame
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
-    // ...
+    // it-> std::vector<cv::DMatch>::iterator object
+    // First we create an outer loop to iterate over the keypoint matches
+    // PREVIOUS FRAME is "queryIdx" and the CURRENT FRAME is "trainIdx"
+
+    // At each index of the vector I have my query index and the key index
+    // What I want to do is to find out the associated keypoint (x,y) coordinate with the associated cv::DMatch
+    // Then I know we have the cv::Rect object inside the DataFrame which provides us with the box coordinates
+    // Using an if condition can determine whether the keypoint is inside the bounding box or not 
+    // In the struct DataFrame we have a std::vector<BoundingBox> that provides the ROI around the detected objects
+    // In the struct DataFrame we also have a std::vector<cv::KeyPoint> that gives the keypoints within the camera image
+    // Now queryIdx and trainIdx basically provide the row/index of the interest point matrix 
+    // If lets say our queryIdx is 95 and trainIdx is 1 we can figure out the associated keypoint coordinates
+    // in the previous and current frame by prevFrame.keypoints[queryIdx].pt and currFrame.keypoints[trainIdx].pt
+    // When we loop it will point to the vector indices of the "matches" which contains cv::DMatch->queryIdx and trainIdx
+    // Now using this we can obtain our keypoint indices
+
+    // Define a single vector to hold the previous and current frame keypoint matches
+    // Have defined a MatchedKeypointCoordinate structure to hold the data
+    
+    std::vector<MatchedKeypointCoordinate> matchedKeypoints;
+    int index = 0;
+    
+    for (auto it = matches.begin(); it != matches.end(); it++) {
+        matchedKeypoints[index].prevX = prevFrame.keypoints[it->queryIdx].pt.x;
+        matchedKeypoints[index].prevY = prevFrame.keypoints[it->queryIdx].pt.y;
+        matchedKeypoints[index].currX = currFrame.keypoints[it->trainIdx].pt.x;
+        matchedKeypoints[index].currY = currFrame.keypoints[it->trainIdx].pt.y;
+        ++index;
+    }
+    // The idea here is to create 2 maps to store boxIds and the number of keypoints inside it
+    // After we input the information we can iterate and compute the difference between number of keypoints and the one with 
+    // the minimum difference will be input into the map
+    // At most the time complexity should be O(numBoundingBox*maxKeypoints)
+    std::map<int,int> prevFrameKeypoints;
+    std::map<int,int> currFrameKeypoint;
+    std::pair<int,int> difference;
+
+    // Store the boxId's and associated number of keypoints in the map
+    for (auto it1 = prevFrame.boundingBoxes.begin(); it1 != prevFrame.boundingBoxes.end(); it1++) {
+        int keypointCount = 0;
+        for (auto it2 = matchedKeypoints.begin(); it2 != matchedKeypoints.end(); it2++) {
+            if (it2->prevX >= (it1->roi.x) && it2->prevX <= (it1->roi.x + it1->roi.width) && it2->prevY >= (it1->roi.y) && it2->prevY <= (it1->roi.y + it1->roi.height)) {
+                keypointCount++;
+            }
+        }
+        prevFrameKeypoints.insert({it1->boxID, keypointCount});
+    }
+
+    for (auto it1 = currFrame.boundingBoxes.begin(); it1 != currFrame.boundingBoxes.end(); it1++) {
+        int keypointCount = 0;
+        for (auto it2 = matchedKeypoints.begin(); it2 != matchedKeypoints.end(); it2++) {
+            if (it2->currX >= (it1->roi.x) && it2->currX <= (it1->roi.x + it1->roi.width) && it2->currY >= (it1->roi.y) && it2->currY <= (it1->roi.y + it1->roi.height)) {
+                keypointCount++;
+            }
+        }
+        currFrameKeypoint.insert({it1->boxID, keypointCount});
+    }
+
+    
+    // Compute the differences between the prevFrameKeypoints and currFrameKeypoints stored inside a map
+    for (auto it1 = prevFrameKeypoints.begin(); it1 != prevFrameKeypoints.end(); it1++) {
+        // Set it to a very large value
+        // currDiff will be used to update the current difference value and diff will be used to store the smallest difference value
+        int diff = 1e-8; 
+        int currDiff = 1e-8;
+        for (auto it2 = currFrameKeypoint.begin(); it2 != currFrameKeypoint.end(); it2++) {
+            if (currDiff < diff) {
+                diff = currDiff;
+                difference.first = it2->first; // BoxId
+                difference.second = it2->second; // Number of Keypoints
+            } else {
+                currDiff = (it1->second) - (it2->second);
+            }
+        }
+        // Store the best bounding boxes in the map
+        bbBestMatches.insert({it1->first, difference.first});
+    }
 }
