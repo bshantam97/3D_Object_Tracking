@@ -153,18 +153,18 @@ void clusterKptMatchesWithROI(BoundingBox &boundingBox, std::vector<cv::KeyPoint
         if (boundingBox.roi.contains(kptsCurr[it->trainIdx].pt)) KeypointMatch.push_back(*it);
     }
     // Euclidean distance computation
-    double meanEuclideanDistance = 0;
+    double meanEuclideanDistance = 0.0;
 
-    for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {
-        
-        meanEuclideanDistance+=std::sqrt(std::pow((kptsCurr[it->trainIdx].pt.x - kptsPrev[it->queryIdx].pt.x), 2)
-                                        + std::pow((kptsCurr[it->trainIdx].pt.y - kptsPrev[it->queryIdx].pt.y), 2));    
+    for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {   
+
+        meanEuclideanDistance += cv::norm(kptsCurr[it->trainIdx].pt - kptsPrev[it->queryIdx].pt);
     }
+
     meanEuclideanDistance = meanEuclideanDistance / KeypointMatch.size();
+    
     // Now we filter the matches
     for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {
-        double euclideanDistance = std::sqrt(std::pow((kptsCurr[it->trainIdx].pt.x - kptsPrev[it->queryIdx].pt.x), 2)
-                                            + std::pow((kptsCurr[it->trainIdx].pt.y - kptsPrev[it->queryIdx].pt.y), 2));
+        double euclideanDistance = cv::norm(kptsCurr[it->trainIdx].pt - kptsPrev[it->queryIdx].pt);
         if (euclideanDistance < meanEuclideanDistance) {
             boundingBox.keypoints.push_back(kptsCurr[it->trainIdx]);
             boundingBox.kptMatches.push_back(*it);
@@ -221,7 +221,8 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
     // Compute the camera based TTC from the distance ratios. Idea is to observe the scale change
     double medianDistanceRatio;
     std::sort(distRatios.begin(), distRatios.end());
-    medianDistanceRatio = (distRatios.size() % 2 == 0) ? (distRatios[(distRatios.size() / 2) - 1] + distRatios[distRatios.size()/2])/2.0 : distRatios[std::floor(distRatios.size() / 2)];
+    long medianIndex = (distRatios.size() / 2);
+    medianDistanceRatio = (distRatios.size() % 2 == 0) ? (distRatios[medianIndex - 1] + distRatios[medianIndex]) / 2.0 : distRatios[medianIndex];
     TTC = -dt / (1-medianDistanceRatio);
 }
 
