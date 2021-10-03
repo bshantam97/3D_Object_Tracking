@@ -6,6 +6,7 @@ Welcome to the final project of the camera course. By completing all the lessons
 
 <img src="images/course_code_structure.png" width="779" height="414" />
 
+<img src="images/TTC_Output.png" width="850" height="414" />
 In this final project, you will implement the missing parts in the schematic. To do this, you will complete four major tasks: 
 1. First, you will develop a way to match 3D objects over time by using keypoint correspondences. 
 2. Second, you will compute the TTC based on Lidar measurements. 
