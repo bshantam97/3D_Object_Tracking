@@ -35,9 +35,8 @@ Formula for TTC = - (delta_t) / (1- h1/h0)
 
 ## FP.5 Performance Evaluation 1 (Describing examples where Lidar TTC estimations is off)
 
-The Lidar measurements are almost always right and I did not come across a detector descriptor combinatation where the lidar TTC Estimation was wrong. The range was always in between 8-13 meters.
+The Lidar measurements are almost always right and I did not come across a detector descriptor combinatation where the lidar TTC Estimation was wrong. The range was always in between 8-13 meters. The median filtering worked really well in removing outliers for TTC Lidar prediction. Although the Camera estimates were off sometimes as can be seen in the histograms plotted below.
 
-For 
 ## FP.6 Performance Evaluation 2 
 
 I have plotted histograms of Time to collision using the Point Cloud Library. Please be sure to install PCL from the documentation provided online. Updates to CMakeLists.txt have been made to incorporate it.
