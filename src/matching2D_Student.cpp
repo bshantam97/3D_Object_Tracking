@@ -111,7 +111,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
                       std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
 {
     // configure matcher
-    bool crossCheck = false;
+    bool crossCheck = true;
 
     // cv::Ptr is basically a std::shared_ptr 
 

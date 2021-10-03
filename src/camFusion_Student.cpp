@@ -149,27 +149,39 @@ void clusterKptMatchesWithROI(BoundingBox &boundingBox, std::vector<cv::KeyPoint
     // keypoint matches 
  
     std::vector<cv::DMatch> KeypointMatch;
+    std::vector<double> EuclideanDistance;
     for (auto it = kptMatches.begin(); it != kptMatches.end(); it++) {
-        if (boundingBox.roi.contains(kptsCurr[it->trainIdx].pt)) KeypointMatch.push_back(*it);
-    }
-    // Euclidean distance computation
-    double meanEuclideanDistance = 0.0;
-
-    for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {   
-
-        meanEuclideanDistance += cv::norm(kptsCurr[it->trainIdx].pt - kptsPrev[it->queryIdx].pt);
+        if (boundingBox.roi.contains(kptsCurr.at(it->trainIdx).pt)) KeypointMatch.push_back(*it);
     }
 
-    meanEuclideanDistance = meanEuclideanDistance / KeypointMatch.size();
-    
-    // Now we filter the matches
     for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {
-        double euclideanDistance = cv::norm(kptsCurr[it->trainIdx].pt - kptsPrev[it->queryIdx].pt);
-        if (euclideanDistance < meanEuclideanDistance) {
-            boundingBox.keypoints.push_back(kptsCurr[it->trainIdx]);
-            boundingBox.kptMatches.push_back(*it);
-        }  
+        double Distance = cv::norm(kptsCurr.at(it->trainIdx).pt - kptsPrev.at(it->queryIdx).pt);
+        EuclideanDistance.push_back(Distance);
     }
+
+    int numMatches = KeypointMatch.size();
+    double meanEuclideanDistance = std::accumulate(EuclideanDistance.begin(), EuclideanDistance.end(), 0.0) / numMatches;
+
+    // Perform the actual filtering
+    int index = 0;
+    for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {
+        // double currDistance = cv::norm(kptsCurr.at(it->trainIdx).pt - kptsPrev.at(it->queryIdx).pt);
+        if (EuclideanDistance[index] < meanEuclideanDistance) {
+            boundingBox.keypoints.push_back(kptsCurr.at(it->trainIdx));
+            boundingBox.kptMatches.push_back(*it);
+            index++;
+        }
+        index++;
+    }
+    
+    // // Now we filter the matches
+    // for (auto it = KeypointMatch.begin(); it != KeypointMatch.end(); it++) {
+    //     double euclideanDistance = cv::norm(kptsCurr[it->trainIdx].pt - kptsPrev[it->queryIdx].pt);
+    //     if (euclideanDistance < meanEuclideanDistance) {
+    //         boundingBox.keypoints.push_back(kptsCurr[it->trainIdx]);
+    //         boundingBox.kptMatches.push_back(*it);
+    //     }  
+    // }
 }
 
 
@@ -184,11 +196,11 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 {
     // Compute the distance ratios between all matched keypoints
     std::vector<double> distRatios;
-    double dt = frameRate / 100.0;
+    double dt = 1 / frameRate;
     for (auto it1 = kptMatches.begin(); it1 != kptMatches.end(); ++it1) {
         // Obtain the current keypoint and its matched keypoint in the previous frame 
         cv::KeyPoint kpOuterCurr = kptsCurr.at(it1->trainIdx);
-        cv::KeyPoint kpOuterPrev = kptsCurr.at(it1->queryIdx);
+        cv::KeyPoint kpOuterPrev = kptsPrev.at(it1->queryIdx);
 
         for (auto it2 = kptMatches.begin(); it2 != kptMatches.end(); ++it2) {
             double minDist = 100.0;
@@ -232,7 +244,7 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 {
     // Time between 2 consecutive measurements
     
-    double dt = frameRate / 100;
+    double dt = 1/frameRate;
 
     std::vector<double> prevXcoord;
     std::vector<double> currXcoord;

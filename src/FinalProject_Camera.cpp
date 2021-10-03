@@ -12,6 +12,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/xfeatures2d/nonfree.hpp>
+#include <pcl/visualization/pcl_plotter.h>
 
 #include "dataStructures.h"
 #include "matching2D.hpp"
@@ -24,6 +25,9 @@
 int main(int argc, const char *argv[])
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
+
+    // For visualization 
+    pcl::visualization::PCLPlotter * plotter = new pcl::visualization::PCLPlotter();
 
     // data location
     std::string dataPath = "../";
@@ -71,7 +75,8 @@ int main(int argc, const char *argv[])
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
     std::vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
     bool bVis = false;            // visualize results
-
+    std::vector<double> lidarTTC;
+    std::vector<double> cameraTTC;
     /* MAIN LOOP OVER ALL IMAGES */
     // imgEndIndex = 18 and imgStartIndex = 0
 
@@ -196,7 +201,7 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        std::string descriptorType = "BRIEF"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
+        std::string descriptorType = "BRISK"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
 
         // push descriptors for current frame to end of data buffer
@@ -287,7 +292,8 @@ int main(int argc, const char *argv[])
                     //// TASK FP.2 -> compute time-to-collision based on Lidar data (implement -> computeTTCLidar)
                     double ttcLidar; 
                     computeTTCLidar(prevBB->lidarPoints, currBB->lidarPoints, sensorFrameRate, ttcLidar);
-                    //// EOF STUDENT ASSIGNMENT
+                    lidarTTC.push_back(ttcLidar);
+                     //// EOF STUDENT ASSIGNMENT
 
                     //// STUDENT ASSIGNMENT
                     //// TASK FP.3 -> assign enclosed keypoint matches to bounding box (implement -> clusterKptMatchesWithROI)
@@ -295,6 +301,8 @@ int main(int argc, const char *argv[])
                     double ttcCamera;
                     clusterKptMatchesWithROI(*currBB, (dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);                    
                     computeTTCCamera((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera);
+                    cameraTTC.push_back(ttcCamera);
+
                     //// EOF STUDENT ASSIGNMENT
 
                     bVis = true;
@@ -322,6 +330,25 @@ int main(int argc, const char *argv[])
         }
 
     } // eof loop over all images
+
+    std::cout << "***LIDAR TTC***" << std::endl;
+    for (auto it = lidarTTC.begin(); it != lidarTTC.end(); it++) {
+        std::cout << " " << *it << " "; 
+    }
+
+    std::cout << std::endl;
+    std::cout << "***CAMERA TTC***" << std::endl;
+    for (auto it = cameraTTC.begin(); it != cameraTTC.end(); it++) {
+        std::cout << " " << *it << " "; 
+    }
+
+    plotter->addHistogramData(lidarTTC,10,"Lidar TTC");
+    plotter->addHistogramData(cameraTTC,10, "Camera TTC");
+    plotter->setXTitle("Time to collision for image frames");
+    plotter->setYTitle("Frequency");
+    plotter->setTitle("BRISK/ORB Time to collision for Lidar");
+    plotter->setShowLegend (true); //show legends
+    plotter->plot();
 
     return 0;
 }
