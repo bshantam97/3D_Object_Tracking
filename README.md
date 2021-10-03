@@ -33,6 +33,21 @@ The camera based TTC computation is based on Texture keypoints and the scale cha
 
 Formula for TTC = - (delta_t) / (1- h1/h0)
 
+## FP.5 Performance Evaluation 1 (Describing examples where Lidar TTC estimations is off)
+
+
+## FP.6 Performance Evaluation 2 (Only the best detector descriptor combinations)
+
+I have plotted histograms of Time to collision using the Point Cloud Library. Please be sure to install PCL from the documentation provided online. Updates to CMakeLists.txt have been made to incorporate it.
+
+### Histogram for TTC Lidar and Camera using FAST Keypoint and BRIEF Descriptor
+
+### Histogram for TTC Lidar and Camera using FAST Keypoint and BRISK Descriptor
+
+### Histogram for TTC Lidar and Camra using AKAZE Keypoint and AKAZE Descriptor
+
+
+
 ## Dependencies for Running Locally
 * cmake >= 2.8
   * All OSes: [click here for installation instructions](https://cmake.org/install/)
