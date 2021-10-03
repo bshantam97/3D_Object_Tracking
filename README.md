@@ -35,17 +35,26 @@ Formula for TTC = - (delta_t) / (1- h1/h0)
 
 ## FP.5 Performance Evaluation 1 (Describing examples where Lidar TTC estimations is off)
 
+The Lidar measurements are almost always right and I did not come across a detector descriptor combinatation where the lidar TTC Estimation was wrong. The range was always in between 8-13 meters.
 
-## FP.6 Performance Evaluation 2 (Only the best detector descriptor combinations)
+For 
+## FP.6 Performance Evaluation 2 
 
 I have plotted histograms of Time to collision using the Point Cloud Library. Please be sure to install PCL from the documentation provided online. Updates to CMakeLists.txt have been made to incorporate it.
+
+### Histogram for TTC Lidar and Camera using SHITOMASI Keypoint and FREAK Descriptor
+
+### Histogram for TTC Lidar and Camera using SHITOMASI Keypoint and ORB Descriptor
 
 ### Histogram for TTC Lidar and Camera using FAST Keypoint and BRIEF Descriptor
 
 ### Histogram for TTC Lidar and Camera using FAST Keypoint and BRISK Descriptor
 
-### Histogram for TTC Lidar and Camra using AKAZE Keypoint and AKAZE Descriptor
+### Histogram for TTC Lidar and Camera using ORB Keypoint and BRISK Descriptor
 
+### Histogram for TTC Lidar and Camera using ORB Keypoint and FREAK Descriptor
+
+### Histogram for TTC Lidar and Camera using SIFT Keypoint and FREAK Descriptor
 
 
 ## Dependencies for Running Locally
