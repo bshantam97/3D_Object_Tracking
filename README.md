@@ -43,19 +43,25 @@ For
 I have plotted histograms of Time to collision using the Point Cloud Library. Please be sure to install PCL from the documentation provided online. Updates to CMakeLists.txt have been made to incorporate it.
 
 ### Histogram for TTC Lidar and Camera using SHITOMASI Keypoint and FREAK Descriptor
+<img src="images/SHITOMASI_FREAK.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using SHITOMASI Keypoint and ORB Descriptor
+<img src="images/SHITOMASI_ORB.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using FAST Keypoint and BRIEF Descriptor
+<img src="images/FAST_BRIEF.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using FAST Keypoint and BRISK Descriptor
+<img src="images/FAST_BRISK.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using ORB Keypoint and BRISK Descriptor
+<img src="images/ORB_BRISK.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using ORB Keypoint and FREAK Descriptor
+<img src="images/ORB_FREAK.png" width="779" height="414" />
 
 ### Histogram for TTC Lidar and Camera using SIFT Keypoint and FREAK Descriptor
-
+<img src="images/SIFT_FREAK.png" width="779" height="414" />
 
 ## Dependencies for Running Locally
 * cmake >= 2.8
