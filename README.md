@@ -78,6 +78,9 @@ I have plotted histograms of Time to collision using the Point Cloud Library. Pl
   * Linux: gcc / g++ is installed by default on most Linux distros
   * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
   * Windows: recommend using [MinGW](http://www.mingw.org/)
+* Point Cloud Library (For Visualization): pcl > v1.10
+  * Linux:  sudo apt install libpcl-dev
+  * Windows: .\vcpkg install pcl
 
 ## Basic Build Instructions
 
